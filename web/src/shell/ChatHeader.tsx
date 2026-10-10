@@ -1,3 +1,4 @@
+import { SessionObservatory } from "@/components/observatory/SessionObservatory";
 import {
   ArrowLeftIcon,
   BotIcon,
@@ -624,6 +625,9 @@ export function ChatHeader({
         )}
         {/* Chat/Terminal switcher for terminal-first sessions — self-gates to
             null otherwise. Renders on every shell, iOS included. */}
+        {!pending && conversationId && (
+          <SessionObservatory key={conversationId} conversationId={conversationId} />
+        )}
         {!pending && conversationId && <ViewModeToggle />}
         {!pending && !actionConversation && canFork && (
           <DropdownMenu>

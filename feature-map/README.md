@@ -87,6 +87,8 @@ user-visible behavior. It then uses exactly these four H2 sections in order:
 
 ## Features
 
+- [Session observatory](./observatory.md) covers action inspection, reported reasoning, explicit file references, pause/resume, and session isolation.
+
 - [Custom agents](./custom-agents.md) covers Settings listing, creation, summary
   review, deletion, and capability gating.
 
