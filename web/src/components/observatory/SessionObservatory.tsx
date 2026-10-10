@@ -13,11 +13,26 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSearchParams } from "@/lib/routing";
 import { useChatStore } from "@/store/chatStore";
 import { observatoryModel, type ObservedAction } from "./observatoryModel";
+import { SessionTasks } from "./SessionTasks";
+import { SessionFiles } from "./SessionFiles";
 
 export function SessionObservatory({ conversationId }: { conversationId: string }) {
-  const [open, setOpen] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const open = params.get("observatory") === "1";
+  const setOpen = (value: boolean) => {
+    setParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        if (value) next.set("observatory", "1");
+        else next.delete("observatory");
+        return next;
+      },
+      { replace: true },
+    );
+  };
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -30,7 +45,7 @@ export function SessionObservatory({ conversationId }: { conversationId: string 
         <DialogHeader>
           <DialogTitle>Session observatory</DialogTitle>
           <DialogDescription>
-            Explore the actions and file references in this Omnigent session.
+            Track the plan, inspect activity, and review workspace changes in this session.
           </DialogDescription>
         </DialogHeader>
         {open && <ObservatoryContent key={conversationId} conversationId={conversationId} />}
@@ -75,7 +90,9 @@ export function ObservatoryContent({ conversationId }: { conversationId: string 
             {actions.filter((a) => a.category !== "reasoning").length} actions
           </Badge>
           <Badge variant="outline">{files.length} referenced files</Badge>
-          {pausedActions && <Badge variant="secondary">View paused · collection continues</Badge>}
+          {pausedActions && (
+            <Badge variant="secondary">Activity paused · tasks and files stay live</Badge>
+          )}
         </div>
         <Button
           variant="outline"
@@ -96,6 +113,8 @@ export function ObservatoryContent({ conversationId }: { conversationId: string 
       <Tabs defaultValue="activity">
         <TabsList aria-label="Observatory views">
           <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="tasks">Tasks</TabsTrigger>
+          <TabsTrigger value="changes">File changes</TabsTrigger>
           <TabsTrigger value="files">File map</TabsTrigger>
         </TabsList>
         <TabsContent value="activity" className="space-y-3">
@@ -165,6 +184,12 @@ export function ObservatoryContent({ conversationId }: { conversationId: string 
             </div>
             <ActionInspector action={selected} />
           </div>
+        </TabsContent>
+        <TabsContent value="tasks">
+          <SessionTasks />
+        </TabsContent>
+        <TabsContent value="changes">
+          <SessionFiles key={conversationId} conversationId={conversationId} />
         </TabsContent>
         <TabsContent value="files">
           <FileMap actions={actions} onSelect={setSelectedId} />

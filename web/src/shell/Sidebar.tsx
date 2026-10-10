@@ -436,6 +436,7 @@ function useActiveNavItem(): {
   isInboxPage: boolean;
   isCanvasPage: boolean;
   isTasksPage: boolean;
+  isAgentsPage: boolean;
   isUsagePage: boolean;
   activeExtensionPageId: string | null;
   newSessionProjectName: string | null;
@@ -449,6 +450,7 @@ function useActiveNavItem(): {
   const isInboxPage = !isExtensionRoute && leaf === "inbox";
   const isCanvasPage =
     !isExtensionRoute && isCanvasPathname(location.pathname, rebasePath("/canvas"));
+  const isAgentsPage = !isExtensionRoute && leaf === "agents";
   const isTasksPage = !isExtensionRoute && leaf === "tasks";
   const isUsagePage = !isExtensionRoute && leaf === "usage";
   const activeExtensionPageId =
@@ -458,6 +460,7 @@ function useActiveNavItem(): {
     !isInboxPage &&
     !isCanvasPage &&
     !isTasksPage &&
+    !isAgentsPage &&
     !isUsagePage &&
     !isExtensionRoute;
   const requestedProject = isNewSessionRoute
@@ -473,6 +476,7 @@ function useActiveNavItem(): {
     isInboxPage,
     isCanvasPage,
     isTasksPage,
+    isAgentsPage,
     isUsagePage,
     activeExtensionPageId,
     newSessionProjectName,
@@ -751,6 +755,7 @@ function SidebarImpl({
     isInboxPage,
     isCanvasPage,
     isTasksPage,
+    isAgentsPage,
     isUsagePage,
     activeExtensionPageId,
     newSessionProjectName,
@@ -1142,6 +1147,22 @@ function SidebarImpl({
                     keys={NEW_SESSION_KEYS}
                     className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 opacity-0 transition-opacity group-focus-visible/new-session:opacity-100 [@media((hover:hover)_and_(pointer:fine))]:group-hover/new-session:opacity-100"
                   />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="ghost"
+                className={cn(
+                  SIDEBAR_ROW,
+                  "w-full justify-start border-0 font-normal",
+                  SIDEBAR_HOVER_HIGHLIGHT,
+                  isAgentsPage && SIDEBAR_ACTIVE_HIGHLIGHT,
+                )}
+                data-testid="agents-nav"
+              >
+                <Link to="/agents" onClick={onNavClick} componentId="sidebar.agents">
+                  <LayoutDashboardIcon className="ui-icon" />
+                  Agents
                 </Link>
               </Button>
               {/* Keep Scheduled in the primary nav group with the same row treatment as New session. */}

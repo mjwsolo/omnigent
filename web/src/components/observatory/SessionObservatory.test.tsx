@@ -1,7 +1,8 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AnyBlock } from "@/lib/blocks";
-import { ObservatoryContent } from "./SessionObservatory";
+import { MemoryRouter, useLocation } from "react-router-dom";
+import { SessionObservatory, ObservatoryContent } from "./SessionObservatory";
 import { useChatStore } from "@/store/chatStore";
 
 vi.mock("@/store/chatStore", async () => {
@@ -13,6 +14,7 @@ vi.mock("@/store/chatStore", async () => {
       sessionStatus: "idle",
       blockedOn: null,
       hasMoreHistory: false,
+      todos: [],
     })),
   };
 });
@@ -34,7 +36,12 @@ const group: AnyBlock = {
 };
 afterEach(() => {
   cleanup();
-  useChatStore.setState({ conversationId: "session-a", blocks: [], sessionStatus: "idle" });
+  useChatStore.setState({
+    conversationId: "session-a",
+    blocks: [],
+    sessionStatus: "idle",
+    todos: [],
+  });
 });
 describe("session observatory", () => {
   it("reads live session updates, preserves selection and freezes a paused view", () => {
@@ -72,5 +79,51 @@ describe("session observatory", () => {
     fireEvent.click(tab);
     fireEvent.click(screen.getByRole("button", { name: "src/a.ts" }));
     expect(screen.getByText("No result payload observed.")).toBeInTheDocument();
+  });
+});
+
+describe("session task progress", () => {
+  it("follows the live harness plan rather than inferring task completion from tool output", () => {
+    useChatStore.setState({
+      todos: [
+        { content: "Implement feature", status: "in_progress", activeForm: "Implementing feature" },
+      ],
+    });
+    render(<ObservatoryContent conversationId="session-a" />);
+    fireEvent.focus(screen.getByRole("tab", { name: "Tasks" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Tasks" }));
+    expect(screen.getByText("0 of 1 tasks reported complete")).toBeInTheDocument();
+    expect(screen.getByText("Implementing feature")).toBeInTheDocument();
+    act(() =>
+      useChatStore.setState({
+        todos: [{ content: "Implement feature", status: "completed", activeForm: "" }],
+      }),
+    );
+    expect(screen.getByText("1 of 1 tasks reported complete")).toBeInTheDocument();
+    expect(screen.getByText("Reported complete")).toBeInTheDocument();
+  });
+  it("explains when no plan is available", () => {
+    render(<ObservatoryContent conversationId="session-a" />);
+    fireEvent.focus(screen.getByRole("tab", { name: "Tasks" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Tasks" }));
+    expect(screen.getByText(/No task plan has been reported/)).toBeInTheDocument();
+  });
+});
+
+describe("observatory deep links", () => {
+  it("opens from the fleet URL and preserves other parameters when dismissed", () => {
+    function Location() {
+      return <output data-testid="location">{useLocation().search}</output>;
+    }
+    render(
+      <MemoryRouter initialEntries={["/c/session-a?observatory=1&view=changed"]}>
+        <SessionObservatory conversationId="session-a" />
+        <Location />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("dialog", { name: "Session observatory" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.getByTestId("location")).toHaveTextContent("?view=changed");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

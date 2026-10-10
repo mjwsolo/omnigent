@@ -1176,6 +1176,14 @@ describe("Sidebar session list", () => {
     );
   });
 
+  it("marks Agents active without highlighting New session", () => {
+    mockConversations(THREE_TYPE_CONVERSATIONS);
+    renderSidebar(true, "/agents");
+    expect(screen.getByTestId("agents-nav")).toHaveAttribute("href", "/agents");
+    expect(screen.getByTestId("agents-nav")).toHaveClass("bg-[var(--sidebar-active)]");
+    expect(screen.getByTestId("new-chat-button")).not.toHaveClass("bg-[var(--sidebar-active)]");
+  });
+
   it("marks the 'Automations' nav row active when on /tasks", () => {
     mockConversations(THREE_TYPE_CONVERSATIONS);
     renderSidebar(true, "/tasks");

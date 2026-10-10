@@ -23,7 +23,11 @@ const h = vi.hoisted(() => ({
     };
   } | null,
   onMount: null as DiffOnMount | null,
-  commentOptions: null as { editorRef: { current: unknown }; mounted: boolean } | null,
+  commentOptions: null as {
+    editorRef: { current: unknown };
+    mounted: boolean;
+    canComment: boolean;
+  } | null,
 }));
 vi.mock("@monaco-editor/react", () => ({
   DiffEditor: (props: {
@@ -46,7 +50,11 @@ vi.mock("./monacoSetup", () => ({
 // Capture the comment-layer options so we can assert the diff wires the
 // modified editor into it; return null so render works.
 vi.mock("./useMonacoCommentLayer", () => ({
-  useMonacoCommentLayer: (opts: { editorRef: { current: unknown }; mounted: boolean }) => {
+  useMonacoCommentLayer: (opts: {
+    editorRef: { current: unknown };
+    mounted: boolean;
+    canComment: boolean;
+  }) => {
     h.commentOptions = opts;
     return null;
   },
@@ -66,6 +74,7 @@ function diffTree(props: {
   layout: "unified" | "split";
   hideWhitespace?: boolean;
   wrapLines?: boolean;
+  allowComments?: boolean;
   searchOpen?: boolean;
   onSearchHandled?: () => void;
 }) {
@@ -80,6 +89,7 @@ function diffTree(props: {
       wrapLines={props.wrapLines ?? false}
       conversationId="conv_1"
       comments={[]}
+      allowComments={props.allowComments}
       activeSelection={null}
       onSetActiveSelection={() => {}}
       searchOpen={props.searchOpen}
@@ -601,4 +611,14 @@ describe("diff file position navigation", () => {
       }
     },
   );
+});
+
+it("omits comment affordances in an inspection-only surface", async () => {
+  renderDiff({ before: "old", after: "new", layout: "unified", allowComments: false });
+  await waitFor(() => expect(h.commentOptions?.canComment).toBe(false));
+});
+
+it("retains permission-gated comments by default for workspace review", async () => {
+  renderDiff({ before: "old", after: "new", layout: "unified" });
+  await waitFor(() => expect(h.commentOptions?.canComment).toBe(true));
 });

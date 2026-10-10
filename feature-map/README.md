@@ -87,6 +87,8 @@ user-visible behavior. It then uses exactly these four H2 sections in order:
 
 ## Features
 
+- [Agent management](./agent-management.md) covers the cross-session fleet route, attention filtering, and direct inspection links.
+
 - [Session observatory](./observatory.md) covers action inspection, reported reasoning, explicit file references, pause/resume, and session isolation.
 
 - [Custom agents](./custom-agents.md) covers Settings listing, creation, summary

@@ -2,11 +2,13 @@
 
 The active implementation is the `visual-dynamics-observatory` branch of the Omnigent fork. The earlier standalone viewer is a prototype; it is not the runtime for this integration.
 
+The implementation and verification contract is [the MECE agent-management plan](agent-management-plan.md). The separate `agent-hub` app is a migration prototype, not this product’s runtime.
+
 ## Integration
 
-The session header opens Observatory in both Chat and Terminal modes. The view reads Omnigent's existing `useChatStore` blocks and session status. Omnigent continues owning authentication, permissions, session routing, stream reconnection, and history hydration. No second stream, transcript reader, or model request is introduced.
+The Agents sidebar entry opens `/agents`, a fleet page backed by the existing authenticated session list and update stream. It supports loaded-session search, attention/running filters, and direct links to the shared Observatory. Counts are explicitly scoped to loaded pages. The session header opens Observatory in both Chat and Terminal modes. The view reads Omnigent's existing `useChatStore` blocks and session status. Omnigent continues owning authentication, permissions, session routing, stream reconnection, and history hydration. No second stream, transcript reader, or model request is introduced.
 
-The first integrated slice provides tool/input/output inspection, search, provider-native web observations and links, exposed reasoning, pause/resume, and an action-to-file reference map. It uses the shared shadcn Radix Nova components configured in `web/components.json`: Dialog, Button, Card, Badge, Input, and Tabs. Layout and colors use existing semantic theme tokens; no standalone stylesheet or duplicate component system is imported.
+The current integrated work provides live native task progress, saved workspace change inspection through the existing diff API/viewer, and tool/input/output inspection, search, provider-native web observations and links, exposed reasoning, pause/resume, and an action-to-file reference map. It uses the shared shadcn Radix Nova components configured in `web/components.json`: Dialog, Button, Card, Badge, Input, and Tabs. Layout and colors use existing semantic theme tokens; no standalone stylesheet or duplicate component system is imported.
 
 ## Run and inspect
 
@@ -18,4 +20,4 @@ Ask the agent to read or edit a small file, select that action, and compare its 
 
 Focused tests cover stream projection, reused call IDs across agents/responses, missing versus empty results, explicit file paths, safe links/text, session isolation, selection, and pause/resume. Type checking, lint, and the production build run against the upstream web project.
 
-This is the first integrated slice, not a completed migration of the product plan. Next: connect Omnigent's actual file revisions/diffs to observations; add revision-bound review markers; build a cross-session attention/review workflow; and validate both with developers and engineering leads. Do not infer a verified file write from a successful-looking tool output. The standalone prototype's local-storage labels and hashes are not automatically migrated into Omnigent sessions.
+This is an integrated fleet/task/file pass, not a completed product. Next: connect external passive adapters to Omnigent; link particular file revisions and checks to observations; add revision-bound review markers and lead handoffs; and validate the rendered workflow with developers and engineering leads. Do not infer a verified file write from a successful-looking tool output. The standalone prototype's local-storage labels and hashes are not automatically migrated into Omnigent sessions.

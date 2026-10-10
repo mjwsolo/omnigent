@@ -63,6 +63,8 @@ interface MonacoDiffViewerProps {
   conversationId: string;
   /** Saved comments — highlighted on the modified side. */
   comments: Comment[];
+  /** Disable comment affordances in inspection-only surfaces. */
+  allowComments?: boolean;
   activeSelection: ActiveSelection | null;
   onSetActiveSelection: (sel: ActiveSelection | null) => void;
   /** In-progress comment body; clicking away won't clear an active draft. */
@@ -100,6 +102,7 @@ export function MonacoDiffViewer({
   wrapLines,
   conversationId,
   comments,
+  allowComments = true,
   activeSelection,
   onSetActiveSelection,
   pendingBodyRef,
@@ -268,14 +271,14 @@ export function MonacoDiffViewer({
   }, []);
 
   // Comments anchor into the current ("after") content == the saved file, so
-  // they're always offset-valid here; gate only on edit permission.
+  // they're always offset-valid here; the surface and permission both gate them.
   const commentButton = useMonacoCommentLayer({
     editorRef: modifiedEditorRef,
     mounted,
     comments,
     activeSelection,
     onSetActiveSelection,
-    canComment: canEdit,
+    canComment: canEdit && allowComments,
     pendingBodyRef,
     path,
   });
