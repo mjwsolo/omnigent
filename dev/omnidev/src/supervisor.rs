@@ -78,6 +78,8 @@ pub struct Supervisor {
     shared: Arc<Mutex<Shared>>,
     env: Vec<(String, String)>,
     vite_enabled: bool,
+    open_browser: bool,
+    prefill_enabled: bool,
     /// Whether `--trust-lan-origins` was requested, so we can warn if it was
     /// asked for but no LAN interface turned up any origins to trust.
     trust_lan_origins: bool,
@@ -95,6 +97,8 @@ impl Supervisor {
         shared: Arc<Mutex<Shared>>,
         vite_enabled: bool,
         trust_lan_origins: bool,
+        open_browser: bool,
+        prefill_enabled: bool,
     ) -> Supervisor {
         let env = pod.env();
         let (exit_tx, exit_rx) = mpsc::unbounded_channel();
@@ -104,6 +108,8 @@ impl Supervisor {
             env,
             vite_enabled,
             trust_lan_origins,
+            open_browser,
+            prefill_enabled,
             slots: Default::default(),
             expected_stops: HashSet::new(),
             gen_counter: 0,
@@ -142,7 +148,7 @@ impl Supervisor {
         if self.vite_enabled {
             self.prepare_vite().await;
             self.spawn(ProcId::Vite);
-            self.open_ui_when_ready();
+            self.report_ui_when_ready();
         }
 
         loop {
@@ -171,16 +177,20 @@ impl Supervisor {
         }
     }
 
-    /// Open one browser tab after Vite starts serving the displayed UI URL.
-    fn open_ui_when_ready(&self) {
+    /// Report readiness and optionally open the displayed UI URL.
+    fn report_ui_when_ready(&self) {
         let addr = format!("127.0.0.1:{}", self.pod.ports.vite);
         let host = format!("localhost:{}", self.pod.ports.vite);
         let url = self.pod.vite_display_url();
         let shared = self.shared.clone();
+        let open_browser = self.open_browser;
         tokio::spawn(async move {
             for _ in 0..120 {
                 if http_ok(&addr, "/", &host).await {
-                    shared.lock().unwrap().event(format!("opening UI {url}"));
+                    shared.lock().unwrap().event(format!("UI ready: {url}"));
+                    if !open_browser {
+                        return;
+                    }
                     if let Err(error) = browser::open(&url).await {
                         shared
                             .lock()
@@ -201,7 +211,9 @@ impl Supervisor {
     async fn start_backend(&mut self) {
         self.spawn(ProcId::Server);
         if self.pod.host_enabled() && self.wait_healthy().await {
-            self.prefill_conversations().await;
+            if self.prefill_enabled {
+                self.prefill_conversations().await;
+            }
             self.spawn(ProcId::Host);
         } else if self.pod.host_enabled() {
             self.event("server did not become healthy; host not started");
@@ -323,7 +335,9 @@ impl Supervisor {
         if !self.pod.host_enabled() {
             self.set_status(ProcId::Host, ProcStatus::Stopped);
         } else if self.wait_healthy().await {
-            self.prefill_conversations().await;
+            if self.prefill_enabled {
+                self.prefill_conversations().await;
+            }
             self.spawn(ProcId::Host);
         } else {
             self.event("server did not become healthy after restart");
@@ -699,7 +713,7 @@ mod tests {
             profile: Some(profile),
         });
         let shared = Shared::new(&pod);
-        let mut supervisor = Supervisor::new(pod, shared.clone(), false, false);
+        let mut supervisor = Supervisor::new(pod, shared.clone(), false, false, false, false);
         supervisor.spawn(ProcId::Server);
         supervisor.spawn(ProcId::Host);
         let server_pid = supervisor.slots[ProcId::Server.idx()].pgid.unwrap();

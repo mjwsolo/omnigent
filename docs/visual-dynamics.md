@@ -12,7 +12,19 @@ The current integrated work provides live native task progress, saved workspace 
 
 ## Run and inspect
 
-Use Node 22.13 or newer, pnpm 11.15.1, and Python 3.12 or newer. Follow CONTRIBUTING.md for an isolated Omnigent development environment. Build the UI with `pnpm --filter web run build`, then open an existing session in that environment and select Observatory in the header. In a narrow window the trigger is the activity icon with the accessible name Open session observatory.
+From the fork directory, run:
+
+```sh
+npm start
+```
+
+The same command from the parent VisualDynamics directory delegates here. It installs Python development dependencies, supplies Node 22 and pnpm 11.15.1 without changing global installs, and builds/runs the checkout's `omnidev` supervisor. Prerequisites: npm, `uv`, and Rust/Cargo on PATH. The first launch can take several minutes while Rust compiles.
+
+The launcher prints the exact **Agents** URL and log directory. Ports are allocated per checkout; do not assume 4310 or 4320. It runs the server, host and Vite frontend with isolated Omnigent state, preserves that state across launches, and adds no example sessions. It does not open a browser automatically. Open the printed URL, select Agents, then a session’s Observatory. Ctrl-C or SIGTERM stops its supervised services. A second launch for the same checkout fails with a lock error instead of competing with it.
+
+Pass supervisor options after `--`, for example `npm start -- --vite-port 4330`. `--pod-dir /absolute/path` selects separate state. A pod can inherit configured providers from your normal Omnigent configuration on first creation; agents are only launched when you start a session. No paid model task is submitted by startup.
+
+For the full interactive development console, use `cargo run --manifest-path dev/omnidev/Cargo.toml`. See CONTRIBUTING.md. The separate verification skill uses a hermetic mock environment for automated integration checks.
 
 Ask the agent to read or edit a small file, select that action, and compare its arguments/result with the transcript. Open File map, select the file, pause the action view, and resume after more output arrives. Check light/dark themes and keyboard dismissal. UI entry points and remaining manual verification are recorded in `feature-map/observatory.md`.
 

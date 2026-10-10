@@ -4,6 +4,7 @@ The Agents page brings accessible Omnigent sessions into one fleet view and open
 
 ## Sub-features
 
+- `launch`: npm start runs the fork server, host and frontend; printed Agents URL and service logs.
 - `fleet`: loaded accessible sessions, live summary updates, and honest status labels.
 - `search`: search loaded task titles, agents, projects, owners and host identifiers.
 - `attention`: filter sessions with pending responses or reported failures.
@@ -14,6 +15,7 @@ The Agents page brings accessible Omnigent sessions into one fleet view and open
 
 ## How to get to it (user POV)
 
+- Local checkout: run npm start, open the printed Agents URL; Ctrl-C stops the services.
 - Web desktop: choose Agents in the main sidebar or navigate directly to /agents.
 - Web mobile: open the sidebar drawer and choose Agents.
 - Native desktop/mobile shells: use the shared sidebar Agents entry.

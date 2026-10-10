@@ -128,6 +128,18 @@ struct RunArgs {
     #[arg(long)]
     no_vite: bool,
 
+    /// Run without a terminal UI; stop with SIGINT or SIGTERM.
+    #[arg(long)]
+    headless: bool,
+
+    /// Do not open the UI in a browser.
+    #[arg(long)]
+    no_open: bool,
+
+    /// Do not import example conversations.
+    #[arg(long)]
+    no_fixtures: bool,
+
     /// Wipe the pod directory before starting.
     #[arg(long)]
     clean: bool,
@@ -259,6 +271,7 @@ async fn run_supervisor(args: RunArgs) -> Result<()> {
     )?);
 
     let shared = Shared::new(&pod);
+    shared.lock().unwrap().console_events = args.headless;
     let (cmd_tx, cmd_rx) = mpsc::unbounded_channel::<Cmd>();
 
     // File watcher: Python changes -> Reload commands. Keep the debouncer alive
@@ -277,16 +290,67 @@ async fn run_supervisor(args: RunArgs) -> Result<()> {
         shared.clone(),
         !args.no_vite,
         args.trust_lan_origins,
+        !args.no_open,
+        !args.no_fixtures,
     );
     let sup_handle = tokio::spawn(supervisor.run(cmd_rx));
 
-    // Run the TUI (owns the terminal) until the user quits.
-    let app = tui::App::new(pod.clone(), shared.clone(), cmd_tx.clone());
-    let result = app.run().await;
+    let result = if args.headless {
+        println!("Omnigent fork: {}", pod.repo_root.display());
+        println!(
+            "Agents: {}/agents",
+            pod.vite_display_url().trim_end_matches('/')
+        );
+        println!("Logs: {}", pod.dir.join("logs").display());
+        println!("Starting services. Stop with Ctrl-C or SIGTERM.");
+        wait_for_shutdown().await
+    } else {
+        let app = tui::App::new(pod.clone(), shared.clone(), cmd_tx.clone());
+        app.run().await
+    };
 
     // Tear down children, then wait for the supervisor to finish shutdown.
     let _ = cmd_tx.send(Cmd::Shutdown);
     let _ = sup_handle.await;
 
     result
+}
+
+async fn wait_for_shutdown() -> Result<()> {
+    let mut terminate = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+    tokio::select! {
+        result = tokio::signal::ctrl_c() => result?,
+        _ = terminate.recv() => {},
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod cli_tests {
+    use super::*;
+
+    #[test]
+    fn management_launch_opts_out_of_ui_and_fixtures() {
+        let args = Args::try_parse_from([
+            "omnidev",
+            "--headless",
+            "--no-open",
+            "--no-fixtures",
+            "--vite-port",
+            "4330",
+        ])
+        .unwrap();
+        assert!(args.run.headless);
+        assert!(args.run.no_open);
+        assert!(args.run.no_fixtures);
+        assert_eq!(args.run.vite_port, Some(4330));
+    }
+
+    #[test]
+    fn interactive_defaults_remain_available() {
+        let args = Args::try_parse_from(["omnidev"]).unwrap();
+        assert!(!args.run.headless);
+        assert!(!args.run.no_open);
+        assert!(!args.run.no_fixtures);
+    }
 }

@@ -59,6 +59,7 @@ impl ProcStatus {
 /// State the TUI renders and the supervisor mutates. Guarded by a std mutex;
 /// locks are held only for the duration of a single push/read.
 pub struct Shared {
+    pub console_events: bool,
     pub status: [ProcStatus; 3],
     pub server: LogBuffer,
     pub host: LogBuffer,
@@ -70,6 +71,7 @@ pub struct Shared {
 impl Shared {
     pub fn new(pod: &Pod) -> Arc<Mutex<Shared>> {
         Arc::new(Mutex::new(Shared {
+            console_events: false,
             status: [ProcStatus::Idle, ProcStatus::Idle, ProcStatus::Idle],
             server: LogBuffer::new(&pod.log_file("server")),
             host: LogBuffer::new(&pod.log_file("host")),
@@ -102,7 +104,11 @@ impl Shared {
 
     /// Append a supervisor event (starts, restarts, crashes, reloads).
     pub fn event(&mut self, line: impl Into<String>) {
-        self.all.push(format!("[omnidev] {}", line.into()));
+        let line = format!("[omnidev] {}", line.into());
+        if self.console_events {
+            eprintln!("{line}");
+        }
+        self.all.push(line);
     }
 
     pub fn set_status(&mut self, id: ProcId, status: ProcStatus) {

@@ -104,6 +104,9 @@ canonical checkout path. Per-process logs are written through to
 --trust-lan-origins Trust this machine's LAN origins (for device testing)
 --pod-dir <PATH>    Use a specific pod dir instead of the per-repo default
 --no-vite           Backend + host only (no frontend)
+--headless          Run without the TUI; SIGINT/SIGTERM stops all services
+--no-open           Do not open the browser automatically
+--no-fixtures       Do not import the example conversations
 --clean             Wipe the pod dir before starting
 --debug             Log each watched file change and whether it reloads
 ```
